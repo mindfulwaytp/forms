@@ -1,0 +1,24 @@
+{
+  "GAD7": [
+    {
+      "id": "gad1",
+      "text": "Feeling nervous, anxious or on edge",
+      "type": "scale",
+      "options": ["Not at all", "Several days", "More than half the days", "Nearly every day"]
+    },
+    {
+      "id": "gad2",
+      "text": "Not being able to stop or control worrying",
+      "type": "scale",
+      "options": ["Not at all", "Several days", "More than half the days", "Nearly every day"]
+    }
+  ],
+  "PHQ9": [
+    {
+      "id": "phq1",
+      "text": "Little interest or pleasure in doing things",
+      "type": "scale",
+      "options": ["Not at all", "Several days", "More than half the days", "Nearly every day"]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+runtime: nodejs20
+
+handlers:
+  - url: /admin
+    static_dir: build
+  - url: /.*
+    static_dir: build
+
+  # Catch all to Node.js backend
+  - url: /.*
+    script: auto
+
+automatic_scaling:
+  max_instances: 5
