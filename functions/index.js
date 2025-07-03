@@ -28,6 +28,9 @@ app.use(cors({
   credentials: true,
 }));
 
+app.options('*', cors()); // <- Add this line
+
+
 // Google Sheets setup
 const auth = new google.auth.GoogleAuth({
   scopes: [
