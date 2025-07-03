@@ -48,15 +48,21 @@ app.post('/create-sheet', async (req, res) => {
     const clientId = clientName.toLowerCase().replace(/\s+/g, '_') + '_' + timestamp;
 
     // Create new sheet for the client
-    const newSheet = await sheets.spreadsheets.create({
-      requestBody: {
-        properties: { title: `Client_${clientId}_Submissions` },
-        sheets: [{ properties: { title: 'Submissions' } }],
-      },
-    });
-    const newSheetId = newSheet.data.spreadsheetId;
-    const newSheetUrl = `https://docs.google.com/spreadsheets/d/${newSheetId}`;
-    console.log('Spreadsheet created:', newSheetId);
+      const fileMetadata = {
+        name: `Client_${clientId}_Submissions`,
+        mimeType: 'application/vnd.google-apps.spreadsheet',
+        parents: ['112RKE8_kRR0wVgysggI_X80Qe39WvVP-'], // your folder ID here
+      };
+
+      const file = await drive.files.create({
+        resource: fileMetadata,
+        fields: 'id',
+      });
+
+      const newSheetId = file.data.id;
+      const newSheetUrl = `https://docs.google.com/spreadsheets/d/${newSheetId}`;
+      console.log('Spreadsheet created inside folder:', newSheetId);
+
 
     // Share sheet with admin email
     const drive = google.drive({ version: 'v3', auth });
