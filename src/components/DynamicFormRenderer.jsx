@@ -31,7 +31,7 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
 
       console.log('Submitting form with payload:', payload);
 
-      const res = await fetch(`${import.meta.env.VITE_API_BASE}/create-sheet`, { ... })submit-form', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE}/create-sheet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
