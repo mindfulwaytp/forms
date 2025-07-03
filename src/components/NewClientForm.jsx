@@ -37,7 +37,7 @@ export default function NewClientForm() {
     setGeneratedLinkBase(null);
     setAssignedForms([]);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE}/create-sheet`, { ... })create-sheet', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE}/create-sheet`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
