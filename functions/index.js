@@ -8,10 +8,22 @@ const admin = require('firebase-admin');
 // Initialize Firebase Admin
 admin.initializeApp(); // Use built-in credentials when deployed
 
+const allowedOrigins = [
+  'https://forms-ah97yvgip-forms-projects-0c8ca897.vercel.app',
+  'https://forms-nk8ya44m7-forms-projects-0c8ca897.vercel.app',
+  'http://localhost:5173' // optional for local testing
+];
+
 // Express app
 const app = express();
 app.use(cors({
-  origin: 'https://forms-nk8ya44m7-forms-projects-0c8ca897.vercel.app',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'OPTIONS'],
   credentials: true,
 }));
