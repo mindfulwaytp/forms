@@ -10,8 +10,11 @@ admin.initializeApp(); // Use built-in credentials when deployed
 
 // Express app
 const app = express();
-app.use(cors({ origin: true }));
-app.use(express.json());
+app.use(cors({
+  origin: 'https://forms-nk8ya44m7-forms-projects-0c8ca897.vercel.app',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  credentials: true,
+}));
 
 // Google Sheets setup
 const auth = new google.auth.GoogleAuth({

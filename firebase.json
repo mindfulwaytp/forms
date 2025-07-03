@@ -14,8 +14,6 @@
     ]
   },
   "functions": {
-    "source": "functions",
-    "runtime": "nodejs22",
-    "platform": "gcfv2"
+    "source": "functions"
   }
 }
