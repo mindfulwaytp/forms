@@ -1,18 +1,24 @@
 // src/pages/ClientLogin.jsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export default function ClientLogin({ onLogin }) {
+export default function ClientLogin() {
   const [clientId, setClientId] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch(`https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms?clientId=${encodeURIComponent(clientId)}`);
+      const res = await fetch(
+        `https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms?clientId=${encodeURIComponent(clientId)}`
+      );
       if (!res.ok) throw new Error('Invalid Client ID');
       const data = await res.json();
-      onLogin(clientId, data.assignedForms || []);
+
+      // Navigate to the dashboard with clientId in the query string
+      navigate(`/dashboard?id=${encodeURIComponent(clientId)}`);
     } catch {
       setError('Client ID not found. Please check and try again.');
     }
@@ -20,7 +26,9 @@ export default function ClientLogin({ onLogin }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md mx-auto mt-10 p-4 border rounded">
-      <label htmlFor="clientId" className="block mb-2 font-bold">Enter your Client ID:</label>
+      <label htmlFor="clientId" className="block mb-2 font-bold">
+        Enter your Client ID:
+      </label>
       <input
         id="clientId"
         type="text"
@@ -30,7 +38,9 @@ export default function ClientLogin({ onLogin }) {
         required
       />
       {error && <p className="text-red-600 mt-2">{error}</p>}
-      <button type="submit" className="mt-4 bg-blue-600 text-white py-2 px-4 rounded">Login</button>
+      <button type="submit" className="mt-4 bg-blue-600 text-white py-2 px-4 rounded">
+        Login
+      </button>
     </form>
   );
 }
