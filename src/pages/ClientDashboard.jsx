@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
-import { forms, formNames } from "../forms";
+import { formNames } from "../forms";
 
 export default function ClientDashboard() {
   const [searchParams] = useSearchParams();
   const clientId = searchParams.get("id");
   const [clientInfo, setClientInfo] = useState(null);
+  const [assignedForms, setAssignedForms] = useState([]);
   const [submissions, setSubmissions] = useState([]);
 
   console.log("Client ID:", clientId);
@@ -14,23 +15,29 @@ export default function ClientDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE}/client-info`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE}/client-forms`, {
           params: { clientId },
         });
-        setClientInfo(res.data.clientInfo);
+        console.log("Fetched dashboard data:", res.data);
+
+        setClientInfo({
+          firstName: res.data.clientName,
+          clientId: res.data.clientId,
+        });
+
+        setAssignedForms(res.data.assignedForms || []);
         setSubmissions(res.data.submissions || []);
       } catch (error) {
-        console.error("Error fetching client info:", error);
+        console.error("Error fetching client data:", error);
       }
     };
 
-    fetchData();
+    if (clientId) fetchData();
   }, [clientId]);
 
   const getDisplayName = (formId) =>
-    formNames[formId] || formId.replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-
-  const assignedForms = clientInfo?.assignedForms ? Object.keys(clientInfo.assignedForms) : [];
+    formNames[formId] ||
+    formId.replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -38,8 +45,8 @@ export default function ClientDashboard() {
 
       {clientInfo && (
         <div className="mb-6">
-          <p><strong>Name:</strong> {clientInfo.firstName} {clientInfo.lastName}</p>
-          <p><strong>Client ID:</strong> {clientId}</p>
+          <p><strong>Name:</strong> {clientInfo.firstName}</p>
+          <p><strong>Client ID:</strong> {clientInfo.clientId}</p>
         </div>
       )}
 
@@ -47,13 +54,13 @@ export default function ClientDashboard() {
         <h2 className="text-xl font-semibold mb-2">Assigned Forms</h2>
         <ul className="space-y-2">
           {assignedForms.length > 0 ? (
-            assignedForms.map((formId) => (
-              <li key={formId}>
+            assignedForms.map((form) => (
+              <li key={form.name}>
                 <Link
-                  to={`/form/${formId}?id=${clientId}`}
+                  to={`/form/${form.name}?id=${clientId}`}
                   className="text-blue-600 hover:underline"
                 >
-                  {getDisplayName(formId)}
+                  {getDisplayName(form.name)}
                 </Link>
               </li>
             ))
