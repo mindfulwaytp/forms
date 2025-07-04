@@ -39,21 +39,19 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-2">Assigned Forms</h2>
-        <ul className="space-y-2">
-          {Object.keys(forms).map((formId) => (
-            <li key={formId}>
-              <Link
-                to={`/form/${formId}?id=${clientId}`}
-                className="text-blue-600 hover:underline"
-              >
-                {getDisplayName(formId)}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
+<ul className="space-y-2">
+  {assignedForms.map((formId) => (
+    <li key={formId}>
+      <Link
+        to={`/form/${formId}?id=${clientId}`}
+        className="text-blue-600 hover:underline"
+      >
+        {getDisplayName(formId)}
+      </Link>
+    </li>
+  ))}
+</ul>
+
 
       <div>
         <h2 className="text-xl font-semibold mb-2">Previous Submissions</h2>
