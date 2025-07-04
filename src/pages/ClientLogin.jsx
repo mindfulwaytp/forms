@@ -1,32 +1,18 @@
+// src/pages/ClientLogin.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
-export default function ClientLogin() {
+export default function ClientLogin({ onLogin }) {
   const [clientId, setClientId] = useState('');
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    console.log('Submitting client ID:', clientId);
-
     try {
-      const res = await fetch(
-        `https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms?clientId=${encodeURIComponent(clientId)}`
-      );
-
+      const res = await fetch(`https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms?clientId=${encodeURIComponent(clientId)}`);
       if (!res.ok) throw new Error('Invalid Client ID');
-
       const data = await res.json();
-      console.log('Fetched data:', data);
-
-      // Store client info in sessionStorage (optional)
-      sessionStorage.setItem('clientId', data.clientId);
-      sessionStorage.setItem('assignedForms', JSON.stringify(data.assignedForms || []));
-
-      // ✅ Navigate with client ID as query param
-      navigate(`/client?id=${encodeURIComponent(clientId)}`);
+      onLogin(clientId, data.assignedForms || []);
     } catch {
       setError('Client ID not found. Please check and try again.');
     }
