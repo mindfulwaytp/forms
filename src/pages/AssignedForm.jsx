@@ -5,7 +5,7 @@ import axios from "axios";
 export default function AssignedForm() {
   const { formId } = useParams();
   const [searchParams] = useSearchParams();
-  const clientId = searchParams.get("client");
+  const clientId = searchParams.get("id");
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState(null);
