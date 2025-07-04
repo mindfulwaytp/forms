@@ -5,7 +5,7 @@ import axios from "axios";
 export default function AssignedForm() {
   const { formId } = useParams();
   const [searchParams] = useSearchParams();
-  const clientId = searchParams.get("id");
+  const clientId = searchParams.get("client");
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState(null);
@@ -26,15 +26,10 @@ export default function AssignedForm() {
   }, [clientId, formId]);
 
   const handleResponseChange = (e, index) => {
-    const selectedOption = formData.options.find(opt => opt.value.toString() === e.target.value);
     const updatedResponses = [...responses];
-    updatedResponses[index] = {
-      label: selectedOption.label,
-      value: selectedOption.value
-    };
+    updatedResponses[index] = e.target.value;
     setResponses(updatedResponses);
   };
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -72,19 +67,13 @@ export default function AssignedForm() {
         formData.questions.map((question, index) => (
           <div key={index}>
             <label className="block mb-2">{question}</label>
-            <select
+            <input
+              type="text"
               className="border p-2 w-full"
               required
-              value={responses[index]?.value ?? ""}
+              value={responses[index] || ""}
               onChange={(e) => handleResponseChange(e, index)}
-            >
-              <option value="">-- Select an option --</option>
-              {formData.options?.map((option, optIndex) => (
-                <option key={optIndex} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         ))}
 

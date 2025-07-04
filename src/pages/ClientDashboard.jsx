@@ -1,108 +1,66 @@
 import React, { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axios from "axios";
-import { formNames } from "../forms";
 
-export default function ClientDashboard() {
-  const [searchParams] = useSearchParams();
-  const [clientId, setClientId] = useState(null);
-  const [clientInfo, setClientInfo] = useState(null);
+const formNames = {
+  gad7: 'GAD-7 Anxiety',
+  phq9: 'PHQ-9 Depression',
+  'srs2-adult-self': 'SRS-2 Adult Self',
+  'srs2-adult-informant': 'SRS-2 Adult Informant'
+  // Add other form names here...
+};
+
+export default function ClientDashboard({ clientId, onLogout }) {
   const [assignedForms, setAssignedForms] = useState([]);
-  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Get clientId from search params and store it in state
-  useEffect(() => {
-    const id = searchParams.get("id");
-    setClientId(id);
-    console.log("Extracted client ID from URL:", id);
-  }, [searchParams]);
+useEffect(() => {
+  const fetchAssignedForms = async () => {
+    try {
+      const { data } = await axios.get(`https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms`, {
+        params: { clientId }
+      });
+      setAssignedForms(data.assignedForms);  // This now includes form statuses
+    } catch (error) {
+      console.error("Error fetching assigned forms:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Fetch data after clientId is set
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE}/client-forms`, {
-          params: { clientId },
-        });
-        console.log("Fetched dashboard data:", res.data);
+  if (clientId) {
+    fetchAssignedForms();
+  }
+}, [clientId]);
 
-        setClientInfo({
-          firstName: res.data.clientName,
-          clientId: res.data.clientId,
-        });
-
-        setAssignedForms(res.data.assignedForms || []);
-        setSubmissions(res.data.submissions || []);
-      } catch (error) {
-        console.error("Error fetching client data:", error);
-      }
-    };
-
-    if (clientId) fetchData();
-  }, [clientId]);
-
-  const getDisplayName = (formId) =>
-    formNames[formId] ||
-    formId.replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-
-    console.log("Rendering dashboard with assignedForms:", assignedForms);
+  if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Client Dashboard</h1>
-
-      {clientInfo && (
-        <div className="mb-6">
-          <p><strong>Name:</strong> {clientInfo.firstName}</p>
-          <p><strong>Client ID:</strong> {clientInfo.clientId}</p>
-        </div>
+    <div className="max-w-lg mx-auto mt-10 p-6 border rounded shadow">
+      <h1 className="text-2xl font-bold mb-6 text-center">Your Assigned Forms</h1>
+      {assignedForms.length === 0 ? (
+        <p className="text-center">No forms assigned to you.</p>
+      ) : (
+        <ul className="list-disc list-inside space-y-3">
+          {assignedForms.map((form) => (
+            <li key={form.formId} className="flex justify-between items-center">
+              <Link to={`/form/${form.formId}?client=${clientId}`} className="text-blue-600 hover:underline">
+                {formNames[form.formId] || form.formId}
+              </Link>
+              <span className={`text-xs ${form.status === 'Completed' ? 'text-green-600' : 'text-yellow-600'}`}>
+                {form.status || 'Not Started'}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
 
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-2">Assigned Forms</h2>
-        <ul className="space-y-2">
-          {assignedForms.length > 0 ? (
-            assignedForms.map((form) => (
-              <li key={form.formId}>
-                <Link
-                  to={`/form/${form.formId}?id=${clientId}`}
-                  className="text-blue-600 hover:underline"
-                >
-                  {getDisplayName(form.formId)} ({form.status})
-                </Link>
-              </li>
-            ))
-          ) : (
-            <p className="text-gray-600">No forms currently assigned.</p>
-          )}
-        </ul>
-      </div>
-
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Previous Submissions</h2>
-        {submissions.length > 0 ? (
-          <table className="w-full border">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border px-2 py-1">Form</th>
-                <th className="border px-2 py-1">Submitted At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {submissions.map((form, i) => (
-                <tr key={i}>
-                  <td className="border px-2 py-1">{getDisplayName(form.formId)}</td>
-                  <td className="border px-2 py-1">
-                    {new Date(form.timestamp).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="text-gray-600">No submissions yet.</p>
-        )}
-      </div>
+      <button
+        onClick={onLogout}
+        className="mt-6 bg-red-600 text-white py-2 px-4 rounded w-full"
+      >
+        Logout
+      </button>
     </div>
   );
 }

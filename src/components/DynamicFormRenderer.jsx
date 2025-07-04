@@ -1,19 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { forms } from '../forms';
+import forms from '../forms';
 
 export default function DynamicFormRenderer({ formName, readOnly = false, clientId }) {
-  // Log formName and check if it exists in forms
-  console.log("Form Name:", formName);  // Log formName to verify it's passed correctly
-  console.log("Available Forms Keys:", Object.keys(forms));  // Log the keys of the forms object
-
   const form = forms[formName];
 
-  // If form is not found, log the error
-  if (!form) {
-    console.error("Form not found for formName:", formName);  // Log the error if formName is not in forms
-    return <p className="text-center text-red-600 mt-6">Form not found: {formName}</p>;
-  }
+  if (!form) return <p className="text-center text-red-600 mt-6">Form not found: {formName}</p>;
 
   const [responses, setResponses] = useState(Array(form.questions.length).fill(null));
   const [currentPage, setCurrentPage] = useState(0);
@@ -25,79 +17,47 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
   const startIdx = currentPage * questionsPerPage;
   const currentQuestions = form.questions.slice(startIdx, startIdx + questionsPerPage);
 
-const handleChange = (index, value) => {
-  if (readOnly) return;
+  const handleChange = (index, value) => {
+    if (readOnly) return;
+    const selectedOption = form.options.find(opt => opt.value.toString() === value);
+    if (!selectedOption) return;
 
-  // Find the selected option by matching the value
-  const selectedOption = form.options.find(opt => opt.value.toString() === value);
-  
-  // If no selected option is found, log an error and exit the function
-  if (!selectedOption) {
-    console.error(`No selected option found for value: ${value}`);
-    return;
-  }
-
-  // Log the selected option for debugging
-  console.log(`Selected option:`, selectedOption);
-
-  // Clone the responses array to avoid mutating the state directly
-  const newResponses = [...responses];
-
-  // Log the index being used and ensure it's within bounds
-  console.log(`Updating response at index: ${startIdx + index}`);
-
-  // Make sure the index is within bounds
-  if (startIdx + index < 0 || startIdx + index >= responses.length) {
-    console.error(`Index out of bounds: ${startIdx + index}`);
-    return;
-  }
-
-  // Update the response at the appropriate index
-  newResponses[startIdx + index] = {
-    label: selectedOption.label,
-    value: selectedOption.value
+    const newResponses = [...responses];
+    newResponses[startIdx + index] = {
+      label: selectedOption.label,
+      value: selectedOption.value
+    };
+    setResponses(newResponses);
   };
 
-  // Log the new responses array after updating
-  console.log('Updated responses:', newResponses);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (readOnly) return;
 
-  // Update the state with the new responses array
-  setResponses(newResponses);
-};
+    try {
+      const payload = {
+        clientId,
+        formId: formName,
+        responses,
+        timestamp: new Date().toISOString(),
+      };
 
+      const res = await fetch(`${import.meta.env.VITE_API_BASE}/create-sheet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (readOnly) return;
+      const responseText = await res.text();
+      if (!res.ok) throw new Error(`Failed to submit form: ${responseText}`);
 
-  // Log the payload before submission
-  const payload = {
-    clientId,
-    formId: formName,
-    responses,
-    timestamp: new Date().toISOString(),
+      alert('Form submitted successfully!');
+      navigate(`/dashboard?id=${clientId}`);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert(`Error submitting form: ${error.message}`);
+    }
   };
-
-  // Log the payload to inspect its structure
-  console.log("Submitting payload:", payload);
-
-  try {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE}/create-sheet`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const responseText = await res.text();
-    if (!res.ok) throw new Error(`Failed to submit form: ${responseText}`);
-
-    alert('Form submitted successfully!');
-    navigate(`/dashboard?id=${clientId}`);
-  } catch (error) {
-    console.error('Error submitting form:', error);
-    alert(`Error submitting form: ${error.message}`);
-  }
-};
 
   return (
     <div className="max-w-2xl mx-auto bg-white shadow-md rounded p-6">

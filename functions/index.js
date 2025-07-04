@@ -284,11 +284,8 @@ app.post('/submit-form', async (req, res) => {
 
     // ✅ Validate inputs
     if (!clientId || !formId || !responses || !Array.isArray(responses)) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    // Log responses before submitting to Google Sheets
-    console.log('Responses:', responses);  // This will help you inspect the responses array
+    return res.status(400).json({ error: "Missing required fields" });
+  }
 
     const { sheets } = await getGoogleClients();
 
@@ -384,7 +381,6 @@ app.post('/submit-form', async (req, res) => {
     res.status(500).json({ error: 'Error submitting form' });
   }
 });
-
 
 
 // Deployable function
