@@ -25,18 +25,46 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
   const startIdx = currentPage * questionsPerPage;
   const currentQuestions = form.questions.slice(startIdx, startIdx + questionsPerPage);
 
-  const handleChange = (index, value) => {
-    if (readOnly) return;
-    const selectedOption = form.options.find(opt => opt.value.toString() === value);
-    if (!selectedOption) return;
+const handleChange = (index, value) => {
+  if (readOnly) return;
 
-    const newResponses = [...responses];
-    newResponses[startIdx + index] = {
-      label: selectedOption.label,
-      value: selectedOption.value
-    };
-    setResponses(newResponses);
+  // Find the selected option by matching the value
+  const selectedOption = form.options.find(opt => opt.value.toString() === value);
+  
+  // If no selected option is found, log an error and exit the function
+  if (!selectedOption) {
+    console.error(`No selected option found for value: ${value}`);
+    return;
+  }
+
+  // Log the selected option for debugging
+  console.log(`Selected option:`, selectedOption);
+
+  // Clone the responses array to avoid mutating the state directly
+  const newResponses = [...responses];
+
+  // Log the index being used and ensure it's within bounds
+  console.log(`Updating response at index: ${startIdx + index}`);
+
+  // Make sure the index is within bounds
+  if (startIdx + index < 0 || startIdx + index >= responses.length) {
+    console.error(`Index out of bounds: ${startIdx + index}`);
+    return;
+  }
+
+  // Update the response at the appropriate index
+  newResponses[startIdx + index] = {
+    label: selectedOption.label,
+    value: selectedOption.value
   };
+
+  // Log the new responses array after updating
+  console.log('Updated responses:', newResponses);
+
+  // Update the state with the new responses array
+  setResponses(newResponses);
+};
+
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -70,8 +98,6 @@ const handleSubmit = async (e) => {
     alert(`Error submitting form: ${error.message}`);
   }
 };
-
-
 
   return (
     <div className="max-w-2xl mx-auto bg-white shadow-md rounded p-6">
