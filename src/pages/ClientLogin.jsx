@@ -15,17 +15,19 @@ export default function ClientLogin() {
       const res = await fetch(
         `https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms?clientId=${encodeURIComponent(clientId)}`
       );
-      console.log('Fetch response:', res);
 
       if (!res.ok) throw new Error('Invalid Client ID');
 
       const data = await res.json();
       console.log('Fetched data:', data);
 
-      // ✅ Navigate to the dashboard with the client ID in query params
-      navigate(`/client`);
-    } catch (err) {
-      console.error('Error during login:', err);
+      // Store client info in sessionStorage (or localStorage)
+      sessionStorage.setItem('clientId', data.clientId);
+      sessionStorage.setItem('assignedForms', JSON.stringify(data.assignedForms || []));
+
+      // Navigate to client dashboard
+      navigate('/client');
+    } catch {
       setError('Client ID not found. Please check and try again.');
     }
   };

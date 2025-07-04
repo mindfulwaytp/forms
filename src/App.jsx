@@ -68,20 +68,17 @@ function App() {
         />
 
         {/* Client Dashboard */}
-        <Route
-          path="/client"
-          element={
-            clientId ? (
+          <Route
+            path="/client"
+            element={
               <ClientDashboard
-                clientId={clientId}
-                assignedForms={assignedForms}
+                clientId={sessionStorage.getItem('clientId')}
+                assignedForms={JSON.parse(sessionStorage.getItem('assignedForms') || '[]')}
                 onLogout={handleLogout}
               />
-            ) : (
-              <Navigate to="/client-login" replace />
-            )
-          }
-        />
+            }
+          />
+
 
         {/* Form filler */}
         <Route path="/form/:formName" element={<FormFiller clientId={clientId} />} />
