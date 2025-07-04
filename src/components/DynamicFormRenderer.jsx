@@ -7,26 +7,13 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
 
   if (!form) return <p className="text-center text-red-600 mt-6">Form not found: {formName}</p>;
 
-  const [responses, setResponses] = useState(Array(form.questions.length).fill(null));
-  const [currentPage, setCurrentPage] = useState(0);
+  const [responses, setResponses] = useState(Array(form.questions.length).fill(''));
   const navigate = useNavigate();
-
-  const questionsPerPage = 20;
-  const totalPages = Math.ceil(form.questions.length / questionsPerPage);
-
-  const startIdx = currentPage * questionsPerPage;
-  const currentQuestions = form.questions.slice(startIdx, startIdx + questionsPerPage);
 
   const handleChange = (index, value) => {
     if (readOnly) return;
-    const selectedOption = form.options.find(opt => opt.value.toString() === value);
-    if (!selectedOption) return;
-
     const newResponses = [...responses];
-    newResponses[startIdx + index] = {
-      label: selectedOption.label,
-      value: selectedOption.value
-    };
+    newResponses[index] = value;
     setResponses(newResponses);
   };
 
@@ -42,15 +29,24 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
         timestamp: new Date().toISOString(),
       };
 
+      console.log('Submitting form with payload:', payload);
+
       const res = await fetch(`${import.meta.env.VITE_API_BASE}/create-sheet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const responseText = await res.text();
-      if (!res.ok) throw new Error(`Failed to submit form: ${responseText}`);
+      console.log('Fetch response status:', res.status);
 
+      const responseText = await res.text();
+      console.log('Fetch response text:', responseText);
+
+      if (!res.ok) {
+        throw new Error(`Failed to submit form: ${responseText}`);
+      }
+
+      console.log('Form submitted successfully!');
       alert('Form submitted successfully!');
       navigate(`/dashboard?id=${clientId}`);
     } catch (error) {
@@ -62,13 +58,12 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
   return (
     <div className="max-w-2xl mx-auto bg-white shadow-md rounded p-6">
       <h2 className="text-2xl font-semibold mb-6">{form.title}</h2>
-
       <form onSubmit={handleSubmit} className="space-y-6">
-        {currentQuestions.map((question, i) => (
+        {form.questions.map((question, i) => (
           <div key={i}>
             <p className="mb-2 font-medium">{question}</p>
             <select
-              value={responses[startIdx + i]?.value ?? ""}
+              value={responses[i]}
               onChange={(e) => handleChange(i, e.target.value)}
               required={!readOnly}
               disabled={readOnly}
@@ -83,40 +78,14 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
             </select>
           </div>
         ))}
-
         {!readOnly && (
-          <div className="flex justify-between items-center pt-4">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
-              disabled={currentPage === 0}
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded disabled:opacity-50"
-            >
-              Previous
-            </button>
-
-            {currentPage < totalPages - 1 ? (
-              <button
-                type="button"
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))}
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                type="submit"
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                Submit
-              </button>
-            )}
-          </div>
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Submit
+          </button>
         )}
-
-        <div className="text-center text-sm mt-4 text-gray-500">
-          Page {currentPage + 1} of {totalPages}
-        </div>
       </form>
     </div>
   );
