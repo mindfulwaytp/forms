@@ -42,14 +42,16 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   if (readOnly) return;
 
-  // Log the payload before sending
+  // Log the payload before submission
   const payload = {
     clientId,
     formId: formName,
     responses,
     timestamp: new Date().toISOString(),
   };
-  console.log("Submitting payload:", payload);  // Log the payload to verify
+
+  // Log the payload to inspect its structure
+  console.log("Submitting payload:", payload);
 
   try {
     const res = await fetch(`${import.meta.env.VITE_API_BASE}/create-sheet`, {
@@ -68,6 +70,7 @@ const handleSubmit = async (e) => {
     alert(`Error submitting form: ${error.message}`);
   }
 };
+
 
 
   return (
