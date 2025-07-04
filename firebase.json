@@ -1,8 +1,7 @@
 {
   "functions": {
     "source": "functions",
-    "runtime": "nodejs18",
-    "gen": "1"
+    "runtime": "nodejs18"
   },
   "hosting": {
     "public": "dist",

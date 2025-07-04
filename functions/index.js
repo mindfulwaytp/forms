@@ -28,7 +28,8 @@ app.use(cors({
   credentials: true,
 }));
 
-app.options('*', cors()); // <- Add this line
+// Allow preflight
+app.options('*', cors());
 
 
 // Google Sheets setup
