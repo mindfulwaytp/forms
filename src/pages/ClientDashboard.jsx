@@ -55,12 +55,12 @@ export default function ClientDashboard() {
         <ul className="space-y-2">
           {assignedForms.length > 0 ? (
             assignedForms.map((form) => (
-              <li key={form.name}>
+              <li key={form.formId}>
                 <Link
-                  to={`/form/${form.name}?id=${clientId}`}
+                  to={`/form/${form.formId}?id=${clientId}`}
                   className="text-blue-600 hover:underline"
                 >
-                  {getDisplayName(form.name)}
+                  {getDisplayName(form.formId)} ({form.status})
                 </Link>
               </li>
             ))
