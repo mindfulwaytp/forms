@@ -9,7 +9,7 @@ export default function ClientDashboard() {
   const [clientInfo, setClientInfo] = useState(null);
   const [submissions, setSubmissions] = useState([]);
 
-  console.log("Client ID:", clientId); // Add this
+  console.log("Client ID:", clientId);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,6 +30,8 @@ export default function ClientDashboard() {
   const getDisplayName = (formId) =>
     formNames[formId] || formId.replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
+  const assignedForms = clientInfo?.assignedForms ? Object.keys(clientInfo.assignedForms) : [];
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Client Dashboard</h1>
@@ -41,19 +43,25 @@ export default function ClientDashboard() {
         </div>
       )}
 
-<ul className="space-y-2">
-  {assignedForms.map((formId) => (
-    <li key={formId}>
-      <Link
-        to={`/form/${formId}?id=${clientId}`}
-        className="text-blue-600 hover:underline"
-      >
-        {getDisplayName(formId)}
-      </Link>
-    </li>
-  ))}
-</ul>
-
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-2">Assigned Forms</h2>
+        <ul className="space-y-2">
+          {assignedForms.length > 0 ? (
+            assignedForms.map((formId) => (
+              <li key={formId}>
+                <Link
+                  to={`/form/${formId}?id=${clientId}`}
+                  className="text-blue-600 hover:underline"
+                >
+                  {getDisplayName(formId)}
+                </Link>
+              </li>
+            ))
+          ) : (
+            <p className="text-gray-600">No forms currently assigned.</p>
+          )}
+        </ul>
+      </div>
 
       <div>
         <h2 className="text-xl font-semibold mb-2">Previous Submissions</h2>
