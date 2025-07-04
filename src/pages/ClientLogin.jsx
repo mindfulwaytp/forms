@@ -23,7 +23,7 @@ export default function ClientLogin() {
       console.log('Fetched data:', data);
 
       // ✅ Navigate to the dashboard with the client ID in query params
-      navigate(`/dashboard?id=${encodeURIComponent(clientId)}`);
+      navigate(`/client`);
     } catch (err) {
       console.error('Error during login:', err);
       setError('Client ID not found. Please check and try again.');
