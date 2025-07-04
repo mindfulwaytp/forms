@@ -15,6 +15,7 @@ function App() {
   const [clientId, setClientId] = useState(null);
   const [assignedForms, setAssignedForms] = useState([]);
 
+  // Listen for authentication changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -26,6 +27,10 @@ function App() {
   const handleClientLogin = (id, forms) => {
     setClientId(id);
     setAssignedForms(forms);
+
+    // Store clientId and assignedForms in sessionStorage for persistence
+    sessionStorage.setItem('clientId', id);
+    sessionStorage.setItem('assignedForms', JSON.stringify(forms));
   };
 
   const handleLogout = async () => {
@@ -68,20 +73,22 @@ function App() {
         />
 
         {/* Client Dashboard */}
-          <Route
-            path="/client"
-            element={
-              <ClientDashboard
-                clientId={sessionStorage.getItem('clientId')}
-                assignedForms={JSON.parse(sessionStorage.getItem('assignedForms') || '[]')}
-                onLogout={handleLogout}
-              />
-            }
-          />
+        <Route
+          path="/client"
+          element={
+            <ClientDashboard
+              clientId={sessionStorage.getItem('clientId')}
+              assignedForms={JSON.parse(sessionStorage.getItem('assignedForms') || '[]')}
+              onLogout={handleLogout}
+            />
+          }
+        />
 
-
-        {/* Form filler */}
-        <Route path="/form/:formName" element={<FormFiller clientId={clientId} />} />
+        {/* Form Filler */}
+        <Route
+          path="/form/:formName"
+          element={<FormFiller clientId={clientId} />}
+        />
 
         {/* Redirect fallback */}
         <Route

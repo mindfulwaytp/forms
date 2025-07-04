@@ -1,29 +1,33 @@
-import React from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import DynamicFormRenderer from '../components/DynamicFormRenderer';
 
-// Function to extract query parameters (clientId from URL)
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
 export default function FormFiller({ clientId: propClientId }) {
-  const { formName } = useParams();  // Extract formName from URL params
+  const { formName } = useParams();
   const query = useQuery();
-  const queryClientId = query.get('clientId');  // Extract clientId from query string
-  const clientId = propClientId || queryClientId;  // Prefer propClientId, else use queryClientId
+  const queryClientId = query.get('clientId');
+  const navigate = useNavigate();
+  
+  // Use clientId from props, query, or sessionStorage
+  const [clientId, setClientId] = useState(propClientId || queryClientId || sessionStorage.getItem('clientId'));
 
-  // Logs to verify if formName and clientId are correctly passed
-  console.log("FormFiller is rendered with formName:", formName, "clientId:", clientId);
+  // If clientId is still null, redirect to the login page
+  useEffect(() => {
+    if (!clientId) {
+      navigate('/client-login');  // Redirect to client login page if clientId is not available
+    }
+  }, [clientId, navigate]);
 
-  // If formName or clientId is missing, show an error message
+  console.log("Form Name:", formName);  // Log formName to check if it's 'gad7'
+  console.log("Client ID:", clientId);  // Log clientId to check if it's 'james_1751660311128'
+
   if (!formName || !clientId) {
     return <p className="text-center mt-10 text-red-600">Invalid form or missing client ID.</p>;
   }
-
-  // More detailed logs for formName and clientId values
-  console.log("Form Name:", formName);  // Log formName to check if it's 'gad7' or others
-  console.log("Client ID:", clientId);  // Log clientId to check if it's 'james_1751660311128'
 
   return (
     <div className="max-w-3xl mx-auto mt-10">
