@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
-import forms, { formNames } from "../forms"; // Adjust the path if needed
+import { forms, formNames } from "../forms";
 
 export default function ClientDashboard() {
   const [searchParams] = useSearchParams();
