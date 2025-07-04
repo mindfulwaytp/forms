@@ -1,67 +1,85 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import axios from "axios";
+import forms, { formNames } from "../forms"; // Adjust the path if needed
 
-const formNames = {
-  gad7: 'GAD-7 Anxiety',
-  phq9: 'PHQ-9 Depression',
-  'srs2-adult-self': 'SRS-2 Adult Self',
-  'srs2-adult-informant': 'SRS-2 Adult Informant'
-  // Add other form names here...
-};
+export default function ClientDashboard() {
+  const [searchParams] = useSearchParams();
+  const clientId = searchParams.get("id");
+  const [clientInfo, setClientInfo] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
 
-export default function ClientDashboard({ clientId, onLogout }) {
-  const [assignedForms, setAssignedForms] = useState([]);
-  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE}/client-info`, {
+          params: { clientId },
+        });
+        setClientInfo(res.data.clientInfo);
+        setSubmissions(res.data.submissions || []);
+      } catch (error) {
+        console.error("Error fetching client info:", error);
+      }
+    };
 
-useEffect(() => {
-  const fetchAssignedForms = async () => {
-    try {
-      const { data } = await axios.get(`https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms`, {
-        params: { clientId }
-      });
-      setAssignedForms(data.assignedForms);  // This now includes form statuses
-    } catch (error) {
-      console.error("Error fetching assigned forms:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchData();
+  }, [clientId]);
 
-  if (clientId) {
-    fetchAssignedForms();
-  }
-}, [clientId]);
-
-  if (loading) return <div>Loading...</div>;
+  const getDisplayName = (formId) =>
+    formNames[formId] || formId.replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
-    <div className="max-w-lg mx-auto mt-10 p-6 border rounded shadow">
-      <h1 className="text-2xl font-bold mb-6 text-center">Your Assigned Forms</h1>
-      {assignedForms.length === 0 ? (
-        <p className="text-center">No forms assigned to you.</p>
-      ) : (
-        <ul className="list-disc list-inside space-y-3">
-          {assignedForms.map((form) => (
-            <li key={form.formId} className="flex justify-between items-center">
-              <Link to={`/form/${form.formId}?client=${clientId}`} className="text-blue-600 hover:underline">
-                {formNames[form.formId] || form.formId}
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Client Dashboard</h1>
+
+      {clientInfo && (
+        <div className="mb-6">
+          <p><strong>Name:</strong> {clientInfo.firstName} {clientInfo.lastName}</p>
+          <p><strong>Client ID:</strong> {clientId}</p>
+        </div>
+      )}
+
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-2">Assigned Forms</h2>
+        <ul className="space-y-2">
+          {Object.keys(forms).map((formId) => (
+            <li key={formId}>
+              <Link
+                to={`/form/${formId}?id=${clientId}`}
+                className="text-blue-600 hover:underline"
+              >
+                {getDisplayName(formId)}
               </Link>
-              <span className={`text-xs ${form.status === 'Completed' ? 'text-green-600' : 'text-yellow-600'}`}>
-                {form.status || 'Not Started'}
-              </span>
             </li>
           ))}
         </ul>
-      )}
+      </div>
 
-      <button
-        onClick={onLogout}
-        className="mt-6 bg-red-600 text-white py-2 px-4 rounded w-full"
-      >
-        Logout
-      </button>
+      <div>
+        <h2 className="text-xl font-semibold mb-2">Previous Submissions</h2>
+        {submissions.length > 0 ? (
+          <table className="w-full border">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border px-2 py-1">Form</th>
+                <th className="border px-2 py-1">Submitted At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {submissions.map((form, i) => (
+                <tr key={i}>
+                  <td className="border px-2 py-1">{getDisplayName(form.formId)}</td>
+                  <td className="border px-2 py-1">
+                    {new Date(form.timestamp).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-gray-600">No submissions yet.</p>
+        )}
+      </div>
     </div>
   );
 }
-

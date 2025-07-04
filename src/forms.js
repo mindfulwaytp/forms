@@ -1,15 +1,23 @@
-// src/forms.js
-import gad7 from './forms/gad7.json';
-import phq9 from './forms/phq9.json';
-import srs2_adult_self from './forms/srs2_adult_self.json';
-import srs2_adult_informant from './forms/srs2_adult_informant.json'
+// Auto-import all .json files inside the /forms folder
+const modules = import.meta.glob('./forms/*.json', { eager: true });
 
+const forms = {};
+const formNames = {}; // map for display names
 
-const forms = {
-  gad7,
-  phq9,
-  'SRS-2 Adult (Self)': srs2_adult_self,
-  'SRS-2 Adult (Informant)': srs2_adult_informant
-};
+for (const path in modules) {
+  // Get file name without path or extension
+  const fileName = path.split('/').pop().replace('.json', '');
 
-export default forms;  // <--- default export
+  // Use kebab-case as key: srs2_adult_self => srs2-adult-self
+  const key = fileName.replace(/_/g, '-');
+
+  // Create display name: srs2_adult_self => SRS2 Adult Self
+  const displayName = fileName
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase()); // Title Case
+
+  forms[key] = modules[path].default;
+  formNames[key] = displayName;
+}
+
+export { forms, formNames };
