@@ -283,9 +283,9 @@ app.post('/submit-form', async (req, res) => {
     console.log('Submit-form body:', req.body);
 
     // ✅ Validate inputs
-    if (!clientId || !formId || !Array.isArray(responses) || responses.length === 0) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
+    if (!clientId || !formId || !responses || !Array.isArray(responses)) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
 
     const { sheets } = await getGoogleClients();
 
@@ -315,9 +315,9 @@ app.post('/submit-form', async (req, res) => {
     }
 
     // 📝 Append responses to the form sheet (column B)
-    await sheets.spreadsheets.values.append({
+    await sheets.spreadsheets.values.update({
       spreadsheetId: clientSheetId,
-      range: `${formId}!B1`,
+      range: `${formId}!B1:C${responses.length}`,
       valueInputOption: 'RAW',
       requestBody: { values: responses.map(r => [r.label, r.value]) },
     });
