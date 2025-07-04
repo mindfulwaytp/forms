@@ -10,12 +10,18 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
   const [responses, setResponses] = useState(Array(form.questions.length).fill(''));
   const navigate = useNavigate();
 
-  const handleChange = (index, value) => {
-    if (readOnly) return;
-    const newResponses = [...responses];
-    newResponses[index] = value;
-    setResponses(newResponses);
-  };
+    const handleChange = (index, value) => {
+      if (readOnly) return;
+      const selectedOption = form.options.find(opt => opt.value.toString() === value);
+      if (!selectedOption) return;
+      const newResponses = [...responses];
+      newResponses[index] = {
+        label: selectedOption.label,
+        value: selectedOption.value
+      };
+      setResponses(newResponses);
+    };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,7 +69,7 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
           <div key={i}>
             <p className="mb-2 font-medium">{question}</p>
             <select
-              value={responses[i]}
+              value={responses[i]?.value ?? ""}
               onChange={(e) => handleChange(i, e.target.value)}
               required={!readOnly}
               disabled={readOnly}
