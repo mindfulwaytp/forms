@@ -19,5 +19,5 @@ for (const path in modules) {
   forms[key] = modules[path].default;
   formNames[key] = displayName;
 }
-
+// Trigger rebuild
 export { forms, formNames };
