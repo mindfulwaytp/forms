@@ -8,8 +8,8 @@ export default function ClientDashboard() {
   const clientId = searchParams.get("id");
   const [clientInfo, setClientInfo] = useState(null);
   const [submissions, setSubmissions] = useState([]);
-  const [assignedForms, setAssignedForms] = useState([]);
 
+  console.log("Client ID:", clientId); // Add this
 
   useEffect(() => {
     const fetchData = async () => {
