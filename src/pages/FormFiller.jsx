@@ -12,6 +12,9 @@ export default function FormFiller({ clientId: propClientId }) {
   const queryClientId = query.get('clientId');
   const navigate = useNavigate();
 
+  // Convert formName to formId (usually lowercase and without spaces)
+  const formId = formName?.toLowerCase().replace(/\s+/g, '');
+
   // State to handle clientId and loading
   const [clientId, setClientId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +49,7 @@ export default function FormFiller({ clientId: propClientId }) {
   return (
     <div className="max-w-3xl mx-auto mt-10">
       <h1 className="text-2xl font-bold mb-4 text-center">{formName.toUpperCase()} Form</h1>
-      <DynamicFormRenderer formName={formName} readOnly={false} clientId={clientId} />
+      <DynamicFormRenderer formName={formId} readOnly={false} clientId={clientId} />
     </div>
   );
 }
