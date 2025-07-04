@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { forms, formNames } from '../forms';
+import { forms } from '../forms';
 
 export default function DynamicFormRenderer({ formName, readOnly = false, clientId }) {
+  // Log formName and check if it exists in forms
+  console.log("Form Name:", formName);  // Log formName to verify it's passed correctly
+  console.log("Available Forms Keys:", Object.keys(forms));  // Log the keys of the forms object
+
   const form = forms[formName];
 
-  if (!form) return <p className="text-center text-red-600 mt-6">Form not found: {formName}</p>;
+  // If form is not found, log the error
+  if (!form) {
+    console.error("Form not found for formName:", formName);  // Log the error if formName is not in forms
+    return <p className="text-center text-red-600 mt-6">Form not found: {formName}</p>;
+  }
 
   const [responses, setResponses] = useState(Array(form.questions.length).fill(null));
   const [currentPage, setCurrentPage] = useState(0);
