@@ -7,22 +7,29 @@ export default function ClientLogin() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const res = await fetch(
-        `https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms?clientId=${encodeURIComponent(clientId)}`
-      );
-      if (!res.ok) throw new Error('Invalid Client ID');
-      const data = await res.json();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  console.log('Submitting client ID:', clientId); // ✅ confirm form submitted
 
-      // Navigate to the dashboard with clientId in the query string
-      navigate(`/dashboard?id=${encodeURIComponent(clientId)}`);
-    } catch {
-      setError('Client ID not found. Please check and try again.');
-    }
-  };
+  try {
+    const res = await fetch(
+      `https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms?clientId=${encodeURIComponent(clientId)}`
+    );
+    console.log('Fetch response:', res); // ✅ confirm API response received
+
+    if (!res.ok) throw new Error('Invalid Client ID');
+
+    const data = await res.json();
+    console.log('Fetched data:', data); // ✅ confirm JSON parsed
+
+    navigate(`/dashboard?id=${encodeURIComponent(clientId)}`); // ✅ navigation trigger
+  } catch (err) {
+    console.error('Error during login:', err);
+    setError('Client ID not found. Please check and try again.');
+  }
+};
+
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md mx-auto mt-10 p-4 border rounded">
