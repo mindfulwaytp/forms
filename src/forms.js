@@ -1,23 +1,34 @@
-// Auto-import all .json files inside the /forms folder
-const modules = import.meta.glob('./forms/*.json', { eager: true });
+import React from 'react';
+import { useParams, useLocation } from 'react-router-dom';
+import DynamicFormRenderer from '../components/DynamicFormRenderer';
+import { forms } from '../forms';  // Import forms
 
-const forms = {};
-const formNames = {}; // map for display names
-
-for (const path in modules) {
-  // Get file name without path or extension
-  const fileName = path.split('/').pop().replace('.json', '');
-
-  // Use kebab-case as key: srs2_adult_self => srs2-adult-self
-  const key = fileName.replace(/_/g, '-');
-
-  // Create display name: srs2_adult_self => SRS2 Adult Self
-  const displayName = fileName
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, char => char.toUpperCase()); // Title Case
-
-  forms[key] = modules[path].default;
-  formNames[key] = displayName;
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
 }
-// Trigger rebuild
-export { forms, formNames };
+
+export default function FormFiller({ clientId: propClientId }) {
+  const { formName } = useParams();
+  const query = useQuery();
+  const queryClientId = query.get('clientId');
+  const clientId = propClientId || queryClientId;
+
+  // Debugging: Log available forms
+  console.log("Available Forms:", Object.keys(forms));  // Logs available form keys
+
+  // Debugging: Log formName and clientId
+  console.log("Form Name:", formName);  // Should log 'phq9'
+  console.log("Client ID:", clientId);  // Should log 'james_1751660311128'
+
+  if (!formName || !clientId) {
+    console.error("Form or Client ID is missing:", formName, clientId);  // More detailed log
+    return <p className="text-center mt-10 text-red-600">Invalid form or missing client ID.</p>;
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto mt-10">
+      <h1 className="text-2xl font-bold mb-4 text-center">{formName.toUpperCase()} Form</h1>
+      <DynamicFormRenderer formName={formName} readOnly={false} clientId={clientId} />
+    </div>
+  );
+}

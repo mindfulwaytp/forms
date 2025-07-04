@@ -17,6 +17,9 @@ export default function FormFiller({ clientId: propClientId }) {
     return <p className="text-center mt-10 text-red-600">Invalid form or missing client ID.</p>;
   }
 
+  console.log("Form Name:", formName);  // Log formName to check if it's 'phq9'
+console.log("Client ID:", clientId);  // Log clientId to check if it's 'james_1751660311128'
+
   return (
     <div className="max-w-3xl mx-auto mt-10">
       <h1 className="text-2xl font-bold mb-4 text-center">{formName.toUpperCase()} Form</h1>
