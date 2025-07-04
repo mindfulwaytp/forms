@@ -26,10 +26,15 @@ export default function AssignedForm() {
   }, [clientId, formId]);
 
   const handleResponseChange = (e, index) => {
+    const selectedOption = formData.options.find(opt => opt.value.toString() === e.target.value);
     const updatedResponses = [...responses];
-    updatedResponses[index] = e.target.value;
+    updatedResponses[index] = {
+      label: selectedOption.label,
+      value: selectedOption.value
+    };
     setResponses(updatedResponses);
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,13 +72,19 @@ export default function AssignedForm() {
         formData.questions.map((question, index) => (
           <div key={index}>
             <label className="block mb-2">{question}</label>
-            <input
-              type="text"
+            <select
               className="border p-2 w-full"
               required
-              value={responses[index] || ""}
+              value={responses[index]?.value ?? ""}
               onChange={(e) => handleResponseChange(e, index)}
-            />
+            >
+              <option value="">-- Select an option --</option>
+              {formData.options?.map((option, optIndex) => (
+                <option key={optIndex} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         ))}
 

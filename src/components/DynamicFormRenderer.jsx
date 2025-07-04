@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import forms from '../forms';
+import { forms, formNames } from '../forms';
 
 export default function DynamicFormRenderer({ formName, readOnly = false, clientId }) {
   const form = forms[formName];
