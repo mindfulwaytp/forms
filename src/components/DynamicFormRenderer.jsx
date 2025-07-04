@@ -38,34 +38,37 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
     setResponses(newResponses);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (readOnly) return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (readOnly) return;
 
-    try {
-      const payload = {
-        clientId,
-        formId: formName,
-        responses,
-        timestamp: new Date().toISOString(),
-      };
-
-      const res = await fetch(`${import.meta.env.VITE_API_BASE}/create-sheet`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const responseText = await res.text();
-      if (!res.ok) throw new Error(`Failed to submit form: ${responseText}`);
-
-      alert('Form submitted successfully!');
-      navigate(`/dashboard?id=${clientId}`);
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      alert(`Error submitting form: ${error.message}`);
-    }
+  // Log the payload before sending
+  const payload = {
+    clientId,
+    formId: formName,
+    responses,
+    timestamp: new Date().toISOString(),
   };
+  console.log("Submitting payload:", payload);  // Log the payload to verify
+
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE}/create-sheet`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await res.text();
+    if (!res.ok) throw new Error(`Failed to submit form: ${responseText}`);
+
+    alert('Form submitted successfully!');
+    navigate(`/dashboard?id=${clientId}`);
+  } catch (error) {
+    console.error('Error submitting form:', error);
+    alert(`Error submitting form: ${error.message}`);
+  }
+};
+
 
   return (
     <div className="max-w-2xl mx-auto bg-white shadow-md rounded p-6">
