@@ -21,12 +21,12 @@ export default function ClientLogin() {
       const data = await res.json();
       console.log('Fetched data:', data);
 
-      // Store client info in sessionStorage (or localStorage)
+      // Store client info in sessionStorage (optional)
       sessionStorage.setItem('clientId', data.clientId);
       sessionStorage.setItem('assignedForms', JSON.stringify(data.assignedForms || []));
 
-      // Navigate to client dashboard
-      navigate('/client');
+      // ✅ Navigate with client ID as query param
+      navigate(`/client?id=${encodeURIComponent(clientId)}`);
     } catch {
       setError('Client ID not found. Please check and try again.');
     }
