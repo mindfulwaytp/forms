@@ -45,6 +45,8 @@ export default function ClientDashboard() {
     formNames[formId] ||
     formId.replace(/_/g, " ").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
+    console.log("Rendering dashboard with assignedForms:", assignedForms);
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Client Dashboard</h1>
