@@ -13,27 +13,30 @@ export default function ClientDashboard() {
   console.log("Client ID:", clientId);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE}/client-forms`, {
+  const fetchData = async () => {
+    try {
+      const res = await axios.get(
+        "https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms",
+        {
           params: { clientId },
-        });
-        console.log("Fetched dashboard data:", res.data);
+        }
+      );
+      console.log("Fetched dashboard data:", res.data);
 
-        setClientInfo({
-          firstName: res.data.clientName,
-          clientId: res.data.clientId,
-        });
+      setClientInfo({
+        firstName: res.data.clientName,
+        clientId: res.data.clientId,
+      });
 
-        setAssignedForms(res.data.assignedForms || []);
-        setSubmissions(res.data.submissions || []);
-      } catch (error) {
-        console.error("Error fetching client data:", error);
-      }
-    };
+      setAssignedForms(res.data.assignedForms || []);
+      setSubmissions(res.data.submissions || []);
+    } catch (error) {
+      console.error("Error fetching client data:", error);
+    }
+  };
 
-    if (clientId) fetchData();
-  }, [clientId]);
+  if (clientId) fetchData();
+}, [clientId]);
 
   const getDisplayName = (formId) =>
     formNames[formId] ||
