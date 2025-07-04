@@ -33,20 +33,20 @@ app.use(express.json());
 const CENTRAL_SPREADSHEET_ID = '1tYY6sZ4Pa9bFYKjJtOBqn2xukZwZgL6vG_ddWsIzNKY';
 const PERSONAL_EMAIL = 'ryne@mindfulway-therapy.com';
 
-// 🔐 Google API Client Helper
 async function getGoogleClients() {
   const auth = new google.auth.GoogleAuth({
     scopes: [
-      'https://www.googleapis.com/auth/drive',
       'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive',
     ],
   });
 
   const authClient = await auth.getClient();
+
   const sheets = google.sheets({ version: 'v4', auth: authClient });
   const drive = google.drive({ version: 'v3', auth: authClient });
 
-  return { sheets, drive };
+  return { sheets, drive, auth: authClient };
 }
 
 // Test endpoint
@@ -54,12 +54,13 @@ app.get('/ping', (req, res) => {
   res.json({ message: 'pong' });
 });
 
-// ➕ Create client sheet
 app.post('/create-sheet', async (req, res) => {
   try {
-    const { clientName, dob, evalType, ageRange, userType, selectedForms } = req.body;
+    console.log('📥 Received create-sheet request with body:', req.body);
 
+   const { clientName, selectedForms, dob, evalType, ageRange, userType } = req.body;
     if (!clientName || !selectedForms || selectedForms.length === 0) {
+      console.error('❌ Missing required fields');
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -67,8 +68,8 @@ app.post('/create-sheet', async (req, res) => {
     const clientId = clientName.toLowerCase().replace(/\s+/g, '_') + '_' + timestamp;
 
     const { sheets, drive } = await getGoogleClients();
+    console.log('✅ Got Google clients');
 
-    // Create spreadsheet
     const newSheet = await sheets.spreadsheets.create({
       requestBody: {
         properties: { title: `Client_${clientId}_Submissions` },
@@ -76,36 +77,31 @@ app.post('/create-sheet', async (req, res) => {
       },
     });
 
+    console.log('✅ Sheet created:', newSheet.data.spreadsheetId);
     const newSheetId = newSheet.data.spreadsheetId;
     const newSheetUrl = `https://docs.google.com/spreadsheets/d/${newSheetId}`;
-    console.log('Spreadsheet created:', newSheetId);
 
-    // Share with personal email
-    try {
-      await drive.permissions.create({
-        fileId: newSheetId,
-        requestBody: {
-          type: 'user',
-          role: 'writer',
-          emailAddress: PERSONAL_EMAIL,
-        },
-      });
-      console.log('Shared sheet with:', PERSONAL_EMAIL);
-    } catch (shareErr) {
-      console.error('Sharing error:', shareErr.message);
-    }
+    // Share sheet access
+    await drive.permissions.create({
+      fileId: newSheetId,
+      requestBody: {
+        type: 'user',
+        role: 'writer',
+        emailAddress: PERSONAL_EMAIL,
+      },
+    });
 
-    // Write header to Submissions tab
+    // Initialize Submissions tab header
     await sheets.spreadsheets.values.append({
       spreadsheetId: newSheetId,
       range: 'Submissions!A1',
       valueInputOption: 'RAW',
       requestBody: {
-        values: [['FormID', 'ResponseData']],
+        values: [['ClientID', 'FormID', 'Status', 'Timestamp']],
       },
     });
 
-    // Append to centralized sheet
+    // Add to Clients tab in central sheet
     await sheets.spreadsheets.values.append({
       spreadsheetId: CENTRAL_SPREADSHEET_ID,
       range: 'Clients!A1',
@@ -126,57 +122,92 @@ app.post('/create-sheet', async (req, res) => {
       },
     });
 
-    // Copy form questions to new tabs
+    // For each selected form...
     for (const formId of selectedForms) {
       const questionsTabName = `${formId}_Questions`;
 
+      // Fetch questions from central questions tab
+      const questionsResp = await sheets.spreadsheets.values.get({
+        spreadsheetId: CENTRAL_SPREADSHEET_ID,
+        range: `${questionsTabName}!A:A`,
+      });
+
+      let questions = questionsResp.data.values || [];
+      if (questions[0]?.[0].toLowerCase() === 'questions') {
+        questions = questions.slice(1); // remove header
+      }
+
+      if (questions.length === 0) {
+        console.warn(`No questions found for ${formId}`);
+        continue;
+      }
+
+      // Try to create the form tab
       try {
-        const questionsResp = await sheets.spreadsheets.values.get({
-          spreadsheetId: CENTRAL_SPREADSHEET_ID,
-          range: `${questionsTabName}!A:A`,
-        });
-
-        let questions = questionsResp.data.values || [];
-        if (questions[0] && questions[0][0] === "Questions") {
-          questions = questions.slice(1);
-        }
-
-        if (questions.length === 0) continue;
-
         await sheets.spreadsheets.batchUpdate({
           spreadsheetId: newSheetId,
           requestBody: {
-            requests: [{ addSheet: { properties: { title: formId } } }],
+            requests: [{
+              addSheet: {
+                properties: { title: formId },
+              },
+            }],
           },
         });
-
-        const questionRows = questions.map(q => [q[0]]);
-        await sheets.spreadsheets.values.append({
-          spreadsheetId: newSheetId,
-          range: `${formId}!A1`,
-          valueInputOption: 'RAW',
-          requestBody: {
-            values: questionRows,
-          },
-        });
-      } catch (formErr) {
-        console.error(`Error processing form ${formId}:`, formErr.message);
+      } catch (err) {
+        console.error(`Error adding tab ${formId}:`, err.message);
       }
+
+      // Insert questions into new tab
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: newSheetId,
+        range: `${formId}!A1`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: questions.map(q => [q[0]]),
+        },
+      });
+
+      // Add to Submissions tab
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: newSheetId,
+        range: 'Submissions!A2',
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [[clientId, formId, 'Not Started', new Date().toISOString()]],
+        },
+      });
+
+      // Add to MeasurementTracking
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: CENTRAL_SPREADSHEET_ID,
+        range: 'MeasurementTracking!A1',
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [[
+            clientId,
+            clientName,
+            formId,
+            userType || '',
+            'Not Started',
+            new Date().toISOString(),
+          ]],
+        },
+      });
     }
 
     res.json({
-      message: 'Client sheet created',
+      message: 'Client created with sheet and forms',
       clientId,
-      sheetId: newSheetId,
       sheetUrl: newSheetUrl,
-      assignedForms: selectedForms,
     });
+
   } catch (err) {
-    console.error('Create-sheet error:', err.message);
-    if (err.errors) console.error('Google API error:', JSON.stringify(err.errors));
-    res.status(500).json({ error: 'Error creating client sheet' });
+    console.error('🔥 Error in /create-sheet:', err.message, err.stack);
+    res.status(500).json({ error: 'Sheet creation failed' });
   }
 });
+
 
 // 🔍 Get assigned forms for a client by clientId
 app.get('/client-forms', async (req, res) => {
@@ -189,62 +220,90 @@ app.get('/client-forms', async (req, res) => {
   try {
     const { sheets } = await getGoogleClients();
 
-    // Pull rows from the Clients sheet (excluding header row)
-    const response = await sheets.spreadsheets.values.get({
+    // Step 1: Find the client in the Central Clients sheet
+    const clientsResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: CENTRAL_SPREADSHEET_ID,
       range: 'Clients!A2:J',
     });
 
-    const rows = response.data.values || [];
-
-    // 🔍 Debug logging for server logs
-    console.log('🔍 Looking for clientId:', clientId);
-    console.log('📋 Sample of first 3 rows:', rows.slice(0, 3));
-
-    // Find client row by matching clientId in column A (index 0)
+    const rows = clientsResponse.data.values || [];
     const clientRow = rows.find(row => row[0]?.trim().toLowerCase() === clientId.toLowerCase());
 
     if (!clientRow) {
-      console.warn(`❌ clientId "${clientId}" not found in spreadsheet`);
       return res.status(404).json({ error: 'Client not found' });
     }
 
-    // Extract client name from column B and assigned forms from column C
     const clientName = clientRow[1]?.trim() || '';
     const assignedForms = clientRow[2]?.split(',').map(f => f.trim()).filter(Boolean) || [];
+    const clientSheetId = clientRow[8];
 
-    // ✅ Success response
-    res.json({
+    if (!clientSheetId) {
+      return res.status(500).json({ error: 'Client sheet not found' });
+    }
+
+    // Step 2: Pull statuses from the Submissions tab in the client’s individual sheet
+    const subsResp = await sheets.spreadsheets.values.get({
+      spreadsheetId: clientSheetId,
+      range: 'Submissions!A2:C', // A = ClientID, B = FormID, C = Status
+    });
+
+    const subsRows = subsResp.data.values || [];
+
+    // Step 3: Map assigned forms to statuses
+    const formStatusMap = {};
+    for (const row of subsRows) {
+      const [_cid, formId, status] = row;
+      if (formId) formStatusMap[formId] = status;
+    }
+
+    const formList = assignedForms.map(formId => ({
+      formId,
+      status: formStatusMap[formId] || 'Not Started',
+    }));
+
+    return res.json({
       clientId,
       clientName,
-      assignedForms,
+      assignedForms: formList,
     });
 
   } catch (err) {
-    console.error('🔥 Error fetching client forms:', err.message);
-    res.status(500).json({ error: 'Failed to fetch client forms' });
+    console.error('🔥 Error in /client-forms:', err.message, err.stack);
+    return res.status(500).json({ error: 'Failed to fetch client forms' });
   }
 });
 
 
-// 📨 Submit form
+
 app.post('/submit-form', async (req, res) => {
   try {
-    const { clientId, formId, responses } = req.body;
+    const { clientId, formId, responses, timestamp } = req.body;
+
+    // Log request for debugging
+    console.log('Submit-form body:', req.body);
+
+    // ✅ Validate inputs
+    if (!clientId || !formId || !Array.isArray(responses) || responses.length === 0) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
     const { sheets } = await getGoogleClients();
 
-    const clientSheetResp = await sheets.spreadsheets.values.get({
+    // 🔎 Fetch client info from central sheet
+    const clientsResp = await sheets.spreadsheets.values.get({
       spreadsheetId: CENTRAL_SPREADSHEET_ID,
       range: 'Clients!A2:J',
     });
 
-    const rows = clientSheetResp.data.values || [];
-    const clientRow = rows.find(row => row[0] && row[0].trim() === clientId.trim());
+    const clients = clientsResp.data.values || [];
+    const clientRow = clients.find(row => row[0] === clientId);
     if (!clientRow) return res.status(404).json({ error: 'Client not found' });
 
+    const clientName = clientRow[1];
+    const userType = clientRow[6];
     const clientSheetId = clientRow[8];
-    if (!clientSheetId) return res.status(400).json({ error: 'Client sheet not found' });
 
+    // ✅ Validate question count
     const questionsResp = await sheets.spreadsheets.values.get({
       spreadsheetId: clientSheetId,
       range: `${formId}!A1:A`,
@@ -252,50 +311,77 @@ app.post('/submit-form', async (req, res) => {
 
     const questions = questionsResp.data.values || [];
     if (questions.length !== responses.length) {
-      return res.status(400).json({ error: 'Mismatch between questions and responses count' });
+      return res.status(400).json({ error: 'Question/response mismatch' });
     }
 
-    const responseRows = responses.map(response => [response]);
+    // 📝 Append responses to the form sheet (column B)
     await sheets.spreadsheets.values.append({
       spreadsheetId: clientSheetId,
       range: `${formId}!B1`,
       valueInputOption: 'RAW',
-      requestBody: { values: responseRows },
+      requestBody: { values: responses.map(r => [r.label, r.value]) },
     });
 
-    const submissionsRange = `Submissions!A2:D`;
-    const submissionsResp = await sheets.spreadsheets.values.get({
+    // 📌 Update Submissions tab in client sheet
+    const subsResp = await sheets.spreadsheets.values.get({
       spreadsheetId: clientSheetId,
-      range: submissionsRange,
+      range: `Submissions!A2:D`,
     });
 
-    const submissions = submissionsResp.data.values || [];
-    const submissionRowIndex = submissions.findIndex(row => row[0] === clientId && row[1] === formId);
+    const submissions = subsResp.data.values || [];
+    const index = submissions.findIndex(row => row[0] === clientId && row[1] === formId);
+    const now = timestamp || new Date().toISOString();
 
-    if (submissionRowIndex === -1) {
+    if (index === -1) {
       await sheets.spreadsheets.values.append({
         spreadsheetId: clientSheetId,
         range: 'Submissions!A1',
         valueInputOption: 'RAW',
-        requestBody: {
-          values: [[clientId, formId, 'Completed', new Date().toISOString()]],
-        },
+        requestBody: { values: [[clientId, formId, 'Completed', now]] },
       });
     } else {
       await sheets.spreadsheets.values.update({
         spreadsheetId: clientSheetId,
-        range: `Submissions!C${submissionRowIndex + 2}`,
+        range: `Submissions!C${index + 2}:D${index + 2}`,
         valueInputOption: 'RAW',
-        requestBody: { values: [['Completed']] },
+        requestBody: { values: [['Completed', now]] },
+      });
+    }
+
+    // 📊 Update MeasurementTracking in central sheet
+    const mtResp = await sheets.spreadsheets.values.get({
+      spreadsheetId: CENTRAL_SPREADSHEET_ID,
+      range: 'MeasurementTracking!A2:F',
+    });
+
+    const mtRows = mtResp.data.values || [];
+    const mtIndex = mtRows.findIndex(row => row[0] === clientId && row[2] === formId);
+
+    if (mtIndex === -1) {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: CENTRAL_SPREADSHEET_ID,
+        range: 'MeasurementTracking!A1',
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [[clientId, clientName, formId, userType || '', 'Completed', now]],
+        },
+      });
+    } else {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: CENTRAL_SPREADSHEET_ID,
+        range: `MeasurementTracking!E${mtIndex + 2}:F${mtIndex + 2}`,
+        valueInputOption: 'RAW',
+        requestBody: { values: [['Completed', now]] },
       });
     }
 
     res.send('Form submission received');
   } catch (err) {
-    console.error('Submit-form error:', err.message);
-    res.status(500).send('Error processing form submission');
+    console.error('Submit form error:', err);
+    res.status(500).json({ error: 'Error submitting form' });
   }
 });
+
 
 // Deployable function
 exports.api = functions.https.onRequest(app);
