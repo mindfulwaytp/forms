@@ -14,20 +14,24 @@ export default function ClientDashboard({ clientId, onLogout }) {
   const [assignedForms, setAssignedForms] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAssignedForms = async () => {
-      try {
-        const { data } = await axios.get(`http://localhost:8080/client-forms?clientId=${clientId}`);
-        setAssignedForms(data.assignedForms);  // This now includes form statuses
-      } catch (error) {
-        console.error("Error fetching assigned forms:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+useEffect(() => {
+  const fetchAssignedForms = async () => {
+    try {
+      const { data } = await axios.get(`https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms`, {
+        params: { clientId }
+      });
+      setAssignedForms(data.assignedForms);  // This now includes form statuses
+    } catch (error) {
+      console.error("Error fetching assigned forms:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  if (clientId) {
     fetchAssignedForms();
-  }, [clientId]);
+  }
+}, [clientId]);
 
   if (loading) return <div>Loading...</div>;
 

@@ -178,38 +178,54 @@ app.post('/create-sheet', async (req, res) => {
   }
 });
 
-// 🔍 Get assigned forms
+// 🔍 Get assigned forms for a client by clientId
 app.get('/client-forms', async (req, res) => {
-  const clientId = req.query.clientId;
+  const clientId = req.query.clientId?.trim();
+
   if (!clientId) {
     return res.status(400).json({ error: 'Missing clientId query parameter' });
   }
 
   try {
     const { sheets } = await getGoogleClients();
+
+    // Pull rows from the Clients sheet (excluding header row)
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: CENTRAL_SPREADSHEET_ID,
       range: 'Clients!A2:J',
     });
 
     const rows = response.data.values || [];
-    const clientRow = rows.find(row => row[0] && row[0].trim() === clientId.trim());
+
+    // 🔍 Debug logging for server logs
+    console.log('🔍 Looking for clientId:', clientId);
+    console.log('📋 Sample of first 3 rows:', rows.slice(0, 3));
+
+    // Find client row by matching clientId in column A (index 0)
+    const clientRow = rows.find(row => row[0]?.trim().toLowerCase() === clientId.toLowerCase());
 
     if (!clientRow) {
+      console.warn(`❌ clientId "${clientId}" not found in spreadsheet`);
       return res.status(404).json({ error: 'Client not found' });
     }
 
-    const assignedForms = clientRow[2] ? clientRow[2].split(',') : [];
+    // Extract client name from column B and assigned forms from column C
+    const clientName = clientRow[1]?.trim() || '';
+    const assignedForms = clientRow[2]?.split(',').map(f => f.trim()).filter(Boolean) || [];
+
+    // ✅ Success response
     res.json({
       clientId,
-      clientName: clientRow[1] || '',
+      clientName,
       assignedForms,
     });
+
   } catch (err) {
-    console.error('Client-forms error:', err.message);
+    console.error('🔥 Error fetching client forms:', err.message);
     res.status(500).json({ error: 'Failed to fetch client forms' });
   }
 });
+
 
 // 📨 Submit form
 app.post('/submit-form', async (req, res) => {

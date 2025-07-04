@@ -9,7 +9,7 @@ export default function ClientLogin({ onLogin }) {
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch(`http://localhost:8080/client-forms?clientId=${encodeURIComponent(clientId)}`);
+      const res = await fetch(`https://us-central1-forms-bd6c1.cloudfunctions.net/api/client-forms?clientId=${encodeURIComponent(clientId)}`);
       if (!res.ok) throw new Error('Invalid Client ID');
       const data = await res.json();
       onLogin(clientId, data.assignedForms || []);

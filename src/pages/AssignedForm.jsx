@@ -35,11 +35,11 @@ export default function AssignedForm() {
     e.preventDefault();
 
     try {
-      await axios.post("http://localhost:8080/submit-form", {
-        clientId,
-        formId,
-        responses,
-      });
+      await axios.post("https://us-central1-forms-bd6c1.cloudfunctions.net/api/submit-form", {
+      clientId,
+      formId,
+      responses,
+    });
 
       navigate(`/dashboard?id=${clientId}`);
     } catch (error) {
