@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import forms from '../forms';
@@ -8,92 +9,105 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
   if (!form) return <p className="text-center text-red-600 mt-6">Form not found: {formName}</p>;
 
   const [responses, setResponses] = useState(Array(form.questions.length).fill(''));
+  const [currentPage, setCurrentPage] = useState(0);
   const navigate = useNavigate();
 
-    const handleChange = (index, value) => {
-      if (readOnly) return;
-      const selectedOption = form.options.find(opt => opt.value.toString() === value);
-      if (!selectedOption) return;
-      const newResponses = [...responses];
-      newResponses[index] = {
-        label: selectedOption.label,
-        value: selectedOption.value
+  const QUESTIONS_PER_PAGE = 20;
+  const totalPages = Math.ceil(form.questions.length / QUESTIONS_PER_PAGE);
+  const startIdx = currentPage * QUESTIONS_PER_PAGE;
+  const endIdx = startIdx + QUESTIONS_PER_PAGE;
+  const currentQuestions = form.questions.slice(startIdx, endIdx);
+
+  const handleChange = (index, value) => {
+    if (readOnly) return;
+    const selectedOption = form.options.find(opt => opt.value.toString() === value);
+    if (!selectedOption) return;
+    const newResponses = [...responses];
+    newResponses[index] = {
+      label: selectedOption.label,
+      value: selectedOption.value
+    };
+    setResponses(newResponses);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (readOnly) return;
+
+    try {
+      const payload = {
+        clientId,
+        formId: formName,
+        responses,
+        timestamp: new Date().toISOString(),
       };
-      setResponses(newResponses);
-    };
 
+      console.log('Submitting form with payload:', payload);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (readOnly) return;
+      const res = await fetch(`${import.meta.env.VITE_API_BASE}/submit-form`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-  try {
-    const payload = {
-      clientId,
-      formId: formName,
-      responses,
-      timestamp: new Date().toISOString(),
-    };
+      if (!res.ok) throw new Error('Failed to submit form');
 
-    console.log('Submitting form with payload:', payload);
-
-    const res = await fetch(`${import.meta.env.VITE_API_BASE}/submit-form`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    console.log('Fetch response status:', res.status);
-
-    const responseText = await res.text();
-    console.log('Fetch response text:', responseText);
-
-    if (!res.ok) {
-      throw new Error(`Failed to submit form: ${responseText}`);
+      navigate('/success');
+    } catch (err) {
+      console.error('Form submission error:', err);
     }
-
-    console.log('Form submitted successfully!');
-    alert('Form submitted successfully!');
-    navigate(`/dashboard?id=${clientId}`);
-  } catch (error) {
-    console.error('Error submitting form:', error);
-    alert(`Error submitting form: ${error.message}`);
-  }
-};
-
+  };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white shadow-md rounded p-6">
-      <h2 className="text-2xl font-semibold mb-6">{form.title}</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {form.questions.map((question, i) => (
-          <div key={i}>
-            <p className="mb-2 font-medium">{question}</p>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {currentQuestions.map((question, index) => {
+        const questionIndex = startIdx + index;
+        return (
+          <div key={questionIndex}>
+            <label className="block font-medium text-gray-700 mb-1">
+              {question.prompt}
+            </label>
             <select
-              value={responses[i]?.value ?? ""}
-              onChange={(e) => handleChange(i, e.target.value)}
-              required={!readOnly}
-              disabled={readOnly}
-              className="border rounded px-2 py-1 w-full"
+              value={responses[questionIndex]?.value || ''}
+              onChange={(e) => handleChange(questionIndex, e.target.value)}
+              className="w-full border rounded px-3 py-2"
             >
-              <option value="" disabled>Select an option</option>
-              {form.options.map((option, j) => (
-                <option key={j} value={option.value}>
-                  {option.label}
-                </option>
+              <option value="">Select...</option>
+              {form.options.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
           </div>
-        ))}
-        {!readOnly && (
+        );
+      })}
+
+      <div className="flex justify-between mt-6">
+        <button
+          type="button"
+          onClick={() => setCurrentPage((p) => Math.max(p - 1, 0))}
+          disabled={currentPage === 0}
+          className="bg-gray-200 px-4 py-2 rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+
+        {currentPage < totalPages - 1 ? (
+          <button
+            type="button"
+            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages - 1))}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Next
+          </button>
+        ) : (
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-green-500 text-white px-4 py-2 rounded"
           >
             Submit
           </button>
         )}
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }
