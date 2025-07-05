@@ -23,43 +23,44 @@ export default function DynamicFormRenderer({ formName, readOnly = false, client
     };
 
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (readOnly) return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (readOnly) return;
 
-    try {
-      const payload = {
-        clientId,
-        formId: formName,
-        responses,
-        timestamp: new Date().toISOString(),
-      };
+  try {
+    const payload = {
+      clientId,
+      formId: formName,
+      responses,
+      timestamp: new Date().toISOString(),
+    };
 
-      console.log('Submitting form with payload:', payload);
+    console.log('Submitting form with payload:', payload);
 
-      const res = await fetch(`${import.meta.env.VITE_API_BASE}/create-sheet`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+    const res = await fetch(`${import.meta.env.VITE_API_BASE}/submit-form`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-      console.log('Fetch response status:', res.status);
+    console.log('Fetch response status:', res.status);
 
-      const responseText = await res.text();
-      console.log('Fetch response text:', responseText);
+    const responseText = await res.text();
+    console.log('Fetch response text:', responseText);
 
-      if (!res.ok) {
-        throw new Error(`Failed to submit form: ${responseText}`);
-      }
-
-      console.log('Form submitted successfully!');
-      alert('Form submitted successfully!');
-      navigate(`/dashboard?id=${clientId}`);
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      alert(`Error submitting form: ${error.message}`);
+    if (!res.ok) {
+      throw new Error(`Failed to submit form: ${responseText}`);
     }
-  };
+
+    console.log('Form submitted successfully!');
+    alert('Form submitted successfully!');
+    navigate(`/dashboard?id=${clientId}`);
+  } catch (error) {
+    console.error('Error submitting form:', error);
+    alert(`Error submitting form: ${error.message}`);
+  }
+};
+
 
   return (
     <div className="max-w-2xl mx-auto bg-white shadow-md rounded p-6">
